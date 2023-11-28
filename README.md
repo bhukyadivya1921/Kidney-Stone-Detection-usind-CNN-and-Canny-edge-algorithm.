@@ -1,0 +1,1 @@
+# Kidney-Stone-Detection-usind-CNN-and-Canny-edge-algorithm.
