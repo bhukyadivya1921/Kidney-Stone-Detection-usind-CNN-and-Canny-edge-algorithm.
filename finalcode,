@@ -1,0 +1,183 @@
+# Mount your google drive where you've saved your assignment folder
+from google.colab import drive
+drive.mount('/content/gdrive')
+
+from google.colab import drive
+drive.mount('/content/drive')
+
+data_dir = "/content/drive/MyDrive/MINIPROJECT/FinalDataset/KIDNEY/Stone" 
+
+import cv2
+import os
+import pandas as pd
+# Define the directory containing the image dataset
+# Define the target image size
+img_size = (64, 64)
+# Initialize empty lists to store feature vectors and labels
+features = []
+labels = []
+# Loop through each image in the dataset directory
+for filename in os.listdir(data_dir):
+    # Load the image using OpenCV
+    img = cv2.imread(os.path.join(data_dir, filename))
+    # Resize the image
+    img = cv2.resize(img, img_size)
+    # Convert the image to grayscale
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # Normalize the pixel values
+    img = img / 255.0
+    # Flatten the image into a 1D array
+    feature = img.flatten()
+    # Append the feature vector and label to their respective lists
+    features.append(feature)
+    labels.append(filename.split('.')[0]) # Assuming the filename is in the format 'label.extension'
+# Convert the lists to a pandas DataFrame
+df = pd.DataFrame(features, columns=[f'pixel_{i}' for i in range(len(features[0]))])
+df['label'] = labels
+# Save the pandas DataFrame as a CSV file
+df.to_csv('dataset.csv', index=False)
+
+
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+# Define the input shape of the images
+input_shape = (64, 64, 1) # Assuming the images are 64x64 pixels and grayscale
+# Create a CNN model
+model = keras.Sequential([
+    layers.Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Conv2D(64, kernel_size=(3, 3), activation='relu'),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Conv2D(128, kernel_size=(3, 3), activation='relu'),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Flatten(),
+    layers.Dense(256, activation='relu'),
+    layers.Dropout(0.5),
+    layers.Dense(2, activation='sigmoid') # Two outputs for presence and size prediction
+])
+
+import numpy as np
+import pandas as pd
+import re
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+from sklearn.model_selection import train_test_split
+# Load the dataset from a CSV file
+df = pd.read_csv('dataset.csv')
+
+# Convert the feature vectors and labels to numpy arrays
+X = np.array(df.iloc[:, :-1])
+# Preprocess the target variable y
+y = df.iloc[:, -1].apply(lambda x: 0 if 'No Stone' in x else 1)
+
+# Reshape the feature vectors to 2D images
+X = X.reshape(-1, 64, 64, 1)
+# Convert the labels to one-hot encoded vectors
+y = keras.utils.to_categorical(y, num_classes=2)
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Split the training set into training and validation sets
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+# Define the input shape of the images
+input_shape = (64, 64, 1)
+# Create a CNN model
+model = keras.Sequential([
+    layers.Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Conv2D(64, kernel_size=(3, 3), activation='relu'),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Conv2D(128, kernel_size=(3, 3), activation='relu'),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Flatten(),
+    layers.Dense(256, activation='relu'),
+    layers.Dropout(0.5),
+    layers.Dense(2, activation='sigmoid') # Two outputs for presence and size prediction
+])
+# Compile the CNN model with appropriate loss and optimization functions
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+# Train the model on the training set with validation
+model.fit(X_train, y_train, batch_size=32, epochs=10, validation_data=(X_val, y_val))
+# Evaluate the performance of the model on the testing set
+loss, accuracy = model.evaluate(X_test, y_test)
+print(f'Testing loss: {loss}, Testing accuracy: {accuracy}')
+
+import cv2
+import numpy as np
+# Load an example image
+img = cv2.imread(os.path.join(data_rest,'Stone- (44).jpg' ))
+# Convert the image to grayscaledata_rest
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+# Apply edge detection using the Canny method
+edges = cv2.Canny(gray, 100, 200)
+# Apply thresholding using the binary method
+_, binary = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+# Apply morphological operations to refine the binary image
+kernel = np.ones((5,5),np.uint8)
+erosion = cv2.erode(binary, kernel, iterations = 1)
+dilation = cv2.dilate(erosion, kernel, iterations = 1)
+# Extract features from the enhanced images
+num_stones = len(cv2.findContours(dilation, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0])
+stone_size = np.sum(dilation) / 255 # Total pixel count of the stones
+# Display the original and enhanced images
+# cv2.imshow('Original', img)
+# cv2.imshow('Edges', edges)
+# cv2.imshow('Binary', binary)
+# cv2.imshow('Dilation', dilation)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
+
+from google.colab.patches import cv2_imshow
+
+# Display the original and enhanced images
+print('Original Image ')
+cv2_imshow( img)
+print('Detecting the Edges of Image ')
+#Edges
+cv2_imshow( edges)
+print('Binary Image ')
+#Binary
+cv2_imshow( binary)
+#Dilation
+print('Dilation ')
+cv2_imshow( dilation)
+
+import cv2
+import numpy as np
+
+# Load and preprocess the image
+image = cv2.imread(os.path.join(data_rest, 'Stone- (103).jpg'), 0)  # Load the image in grayscale
+image = cv2.resize(image, (256, 256))  # Resize the image to a fixed size
+image = cv2.GaussianBlur(image, (3, 3), 0)  # Apply Gaussian blur to reduce noise
+
+# Apply Canny edge detection
+edges = cv2.Canny(image, 50, 150)  # Use Canny with threshold values of 50 and 150
+
+# Convert edges to binary image
+edges = cv2.threshold(edges, 128, 255, cv2.THRESH_BINARY)[1]
+
+# Extract features from edges
+num_edges = np.sum(edges)  # Count the number of edge pixels
+contours, hierarchy = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+average_edge_length = np.mean([cv2.arcLength(contour, True) for contour in contours])  # Calculate the average length of the edges
+
+# Prepare the feature matrix and target vector for training
+X = np.array([num_edges, average_edge_length]).reshape(1, -1)  # Feature matrix with two features
+y = np.array([10.0])  # Target vector with the size of the kidney stone (in this example, 10.0 cm)
+
+# Train a linear regression model
+regressor = LinearRegression()
+regressor.fit(X, y)
+
+# Predict the size of a new kidney stone
+new_image = cv2.imread(os.path.join(data_rest, 'Stone- (103).jpg'), 0)  # Load the new image
+new_edges = cv2.Canny(new_image, 50, 150)  # Apply Canny edge detection
+new_edges = cv2.threshold(new_edges, 128, 255, cv2.THRESH_BINARY)[1]  # Convert edges to binary image
+new_num_edges = np.sum(new_edges)  # Count the number of edge pixels
+new_contours, new_hierarchy = cv2.findContours(new_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+new_average_edge_length = np.mean([cv2.arcLength(contour, True) for contour in new_contours])  # Calculate the average length of the edges
+new_X = np.array([new_num_edges, new_average_edge_length]).reshape(1, -1)  # Feature matrix for the new image
+predicted_size = regressor.predict(new_X)  # Predict the size of the new kidney stone
+
+print("Predicted size of the kidney stone: {:.2f} cm".format(predicted_size[0]))
